@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css">
+  <title>FastDeliver - App Delivery Simples</title>
+</head>
+
+<body>
+  <div class="container">
+    <h1>FASTDELIVER</h1>
+    <p>Sua refeição está aqui!!!</p>
+
+    <div class="card">
+      <div class="flex">
+        <input id="search" placeholder="Buscar produto..." />
+        <select id="category"></select>
+      </div>
+    </div>
+
+    <div id="productList" class="grid"></div>
+
+    <div class="card">
+      <h2>Carrinho</h2>
+      <div id="cartItems"></div>
+      <p><strong>Subtotal:</strong> <span id="subtotal"></span></p>
+      <p><strong>Frete:</strong> <span id="frete"></span></p>
+      <p><strong>Desconto:</strong> <span id="desconto"></span></p>
+      <h3>Total: <span id="total"></span></h3>
+
+      <h3>Dados do Cliente</h3>
+      <input id="nome" placeholder="Nome" />
+      <input id="endereco" placeholder="Endereço" />
+      <input id="telefone" placeholder="Telefone" />
+
+      <button class="btn btn-primary" onclick="finalizarCompra()">Finalizar Compra</button>
+    </div>
+
+    <div id="mensagem"></div>
+  </div>
+
+  <script>
+    const produtos = [
+      { id:1, nome:"Pizza Margherita", preco:28.5, categoria:"Pizzas" },
+      { id:2, nome:"Hambúrguer Clássico", preco:22.0, categoria:"Lanches" },
+      { id:3, nome:"Porção de Batata", preco:12.0, categoria:"Acompanhamentos" },
+      { id:4, nome:"Refrigerante", preco:6.5, categoria:"Bebidas" },
+      { id:5, nome:"Sushi - 8 peças", preco:38.0, categoria:"Japonesa" },
+      { id:6, nome:"Salada Caesar", preco:18.0, categoria:"Saladas" }
+    ];
+
+    let carrinho = [];
+
+    function formatar(v) { return v.toLocaleString("pt-BR", { style:"currency", currency:"BRL" }); }
+
+    function carregarCategorias() {
+      const categorias = ["Todos", ...new Set(produtos.map(p => p.categoria))];
+      const sel = document.getElementById("category");
+      categorias.forEach(c => sel.innerHTML += `<option>${c}</option>`);
+    }
+
+    function mostrarProdutos() {
+      const lista = document.getElementById("productList");
+      const busca = document.getElementById("search").value.toLowerCase();
+      const categoria = document.getElementById("category").value;
+
+      lista.innerHTML = "";
+
+      produtos
+        .filter(p => (categoria === "Todos" || p.categoria === categoria))
+        .filter(p => p.nome.toLowerCase().includes(busca))
+        .forEach(p => {
+          lista.innerHTML += `
+            <div class='card'>
+              <h3>${p.nome}</h3>
+              <p>${formatar(p.preco)}</p>
+              <button class='btn btn-primary' onclick='adicionar(${p.id})'>Adicionar</button>
+            </div>
+          `;
+        });
+    }
+
+    function adicionar(id) {
+      const item = carrinho.find(x => x.id === id);
+      if (item) item.qtd++;
+      else {
+        const prod = produtos.find(p => p.id === id);
+        carrinho.push({ ...prod, qtd:1 });
+      }
+      atualizarCarrinho();
+    }
+
+    function remover(id) {
+      carrinho = carrinho.filter(x => x.id !== id);
+      atualizarCarrinho();
+    }
+
+    function atualizarCarrinho() {
+      const div = document.getElementById("cartItems");
+      div.innerHTML = "";
+
+      carrinho.forEach(i => {
+        div.innerHTML += `
+          <div class='flex'>
+            <span>${i.nome} x ${i.qtd}</span>
+            <button class='btn btn-danger' onclick='remover(${i.id})'>Remover</button>
+          </div>
+        `;
+      });
+
+      const subtotal = carrinho.reduce((s, i) => s + i.preco * i.qtd, 0);
+      const frete = subtotal > 0 ? 6.5 : 0;
+      const desconto = subtotal >= 100 ? subtotal * 0.10 : 0;
+      const total = subtotal + frete - desconto;
+
+      document.getElementById('subtotal').textContent = formatar(subtotal);
+      document.getElementById('frete').textContent = formatar(frete);
+      document.getElementById('desconto').textContent = formatar(desconto);
+      document.getElementById('total').textContent = formatar(total);
+    }
+
+    function finalizarCompra() {
+      const nome = document.getElementById('nome').value;
+      const end = document.getElementById('endereco').value;
+      const tel = document.getElementById('telefone').value;
+
+      if (!nome || !end || !tel) return alert("Preencha seus dados!");
+      if (carrinho.length === 0) return alert("Carrinho vazio!");
+
+      document.getElementById('mensagem').innerHTML = `
+        <div class='card'>
+          <h2>Pedido Confirmado!</h2>
+          <p>Obrigado, ${nome}. Seu pedido foi registrado.</p>
+        </div>
+      `;
+
+      carrinho = [];
+      atualizarCarrinho();
+    }
+
+    document.getElementById("search").oninput = mostrarProdutos;
+    document.getElementById("category").onchange = mostrarProdutos;
+
+    carregarCategorias();
+    mostrarProdutos();
+    atualizarCarrinho();
+  </script>
+</body>
+</html>
